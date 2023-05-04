@@ -1,0 +1,76 @@
+from __future__ import print_function
+
+import datetime
+import os.path
+import pytz
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+# If modifying these scopes, delete the file token.json.
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+# Define list of events to search for 
+events_to_delete = []      
+
+# Set the time zone
+timezone = 'Africa/Cairo'
+
+# Set the start and end times for the search range
+start_of_year = datetime.datetime.now(pytz.timezone(timezone)).replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+end_of_year = start_of_year.replace(month=12, day=31)
+
+def main():
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    try:
+        service = build('calendar', 'v3', credentials=creds)
+
+        print('Listing events')
+        events_result = service.events().list(calendarId='primary', timeMin=start_of_year.isoformat(), 
+                                              timeMax=end_of_year.isoformat(), singleEvents=True,
+                                              orderBy='startTime').execute()
+        
+        events = events_result.get('items', [])
+
+        # Delete events with matching names
+        for event in events:
+            for event_to_search_for in events_to_delete:
+                if event_to_search_for.lower() in event["summary"].lower():
+                    try:
+                        service.events().delete(calendarId="primary", eventId=event["id"]).execute()
+                        print(f"Deleted event: {event['summary']}")
+                        break
+                    except HttpError as error:
+                        print(f"An error occurred while deleting event: {event['summary']}")
+                        print(f"Error details: {error}")
+                        break
+
+        if not events:
+            print('No events found.')
+            return
+
+    except HttpError as error:
+        print('An error occurred: %s' % error)
+
+
+if __name__ == '__main__':
+    main()
