@@ -11,5 +11,5 @@
 - Run script: `$ python script.py`
 
 
-### Credit:
+### Credits
 Base python file is from [Google Calendar Quickstart](https://developers.google.com/calendar/api/quickstart/python)
