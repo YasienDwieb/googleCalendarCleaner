@@ -19,8 +19,8 @@ events_to_delete = []
 timezone = 'Africa/Cairo'
 
 # Set the start and end times for the search range
-start_of_year = datetime.datetime.now(pytz.timezone(timezone)).replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-end_of_year = start_of_year.replace(month=12, day=31)
+start_time = datetime.datetime.now(pytz.timezone(timezone)).replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+end_time = start_time.replace(month=12, day=31)
 
 def main():
     creds = None
@@ -45,8 +45,8 @@ def main():
         service = build('calendar', 'v3', credentials=creds)
 
         print('Listing events')
-        events_result = service.events().list(calendarId='primary', timeMin=start_of_year.isoformat(), 
-                                              timeMax=end_of_year.isoformat(), singleEvents=True,
+        events_result = service.events().list(calendarId='primary', timeMin=start_time.isoformat(), 
+                                              timeMax=end_time.isoformat(), singleEvents=True,
                                               orderBy='startTime').execute()
         
         events = events_result.get('items', [])
